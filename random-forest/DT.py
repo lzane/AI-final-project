@@ -1,4 +1,5 @@
 import operator
+from evaluate import Evaluate
 from collections import deque
 from math import log
 
@@ -366,5 +367,8 @@ if __name__ == "__main__":
     print('classify start')
     test_set.start_classify(root)
     print('classify finish')
-    res = test_set.check_accuracy()
-    print("(accuracy, correct count) = " + str(res))
+
+    evaluate = Evaluate(test_set)
+    evaluate.print()
+    # res = test_set.check_accuracy()
+    # print("(accuracy, correct count) = " + str(res))
