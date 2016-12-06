@@ -49,7 +49,7 @@ class Row:
 
 class DataSet:
     def __init__(self, lines, file_type):
-        self.positive_threshold = 0.35
+        self.positive_threshold = 0.4
         self.type = file_type
         self.rows = []
         self.remove_index = []
@@ -66,11 +66,10 @@ class DataSet:
             del line[2:4]
             line = [getLabel(word) for word in line]
             if file_type == "TestSet":
-                row = Row(line[:], None)
+                row = Row(line[:-1], None)
             elif file_type == "TrainSet":
                 for index in self.remove_index:
                     del line[index]  # delete some attribute
-
                 row = Row(line[:-1], line[-1])
             else:
                 row = Row(line[:-1], line[-1])
