@@ -1,5 +1,6 @@
 # Algorithm
 import random
+from copy import deepcopy
 
 ID3 = 1
 C4_5 = 2
@@ -45,28 +46,49 @@ class Row:
         self.predict = None
         self.mid_predict = [0, 0]
 
+
 class DataSet:
     def __init__(self, lines, file_type):
-        self.positive_threshold = 0.4
+        self.positive_threshold = 0.35
         self.type = file_type
         self.rows = []
+        self.remove_index = []
+
+        # random delete some attribute
+        if file_type == "TrainSet":
+            temp_remove_index1 = random.randint(0, len(lines[0].split(',')) - 4)
+            temp_remove_index2 = random.randint(0, len(lines[0].split(',')) - 5)
+            self.remove_index.append(temp_remove_index1)
+            self.remove_index.append(temp_remove_index2)
+
         for line in lines:
             line = line.split(',')
             del line[2:4]
             line = [getLabel(word) for word in line]
-            # line = list(map(int, line))  # Parse to int
             if file_type == "TestSet":
                 row = Row(line[:], None)
+            elif file_type == "TrainSet":
+                for index in self.remove_index:
+                    del line[index]  # delete some attribute
+
+                row = Row(line[:-1], line[-1])
             else:
                 row = Row(line[:-1], line[-1])
+
             self.rows.append(row)
 
-    def start_classify(self, tree_root_list):
+    def start_classify(self, tree_root_list, trees_dataset):
         for row in self.rows:
-            for tree_root in tree_root_list:
-                row.mid_predict[classify(row, tree_root)] += 1
+            # for tree_root in tree_root_list:
+            for i in range(len(tree_root_list)):
+                temp_row = deepcopy(row)
+                tree_root = tree_root_list[i]
+                remove_index = trees_dataset[i]
+                for index in remove_index:
+                    del temp_row.attr[index]
+                row.mid_predict[classify(temp_row, tree_root)] += 1
 
-            positive_ratio = float(row.mid_predict[1])/(row.mid_predict[0]+row.mid_predict[1])
+            positive_ratio = float(row.mid_predict[1]) / (row.mid_predict[0] + row.mid_predict[1])
             if positive_ratio > self.positive_threshold:
                 row.predict = 1
             else:
