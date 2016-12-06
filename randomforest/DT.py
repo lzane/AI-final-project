@@ -1,83 +1,8 @@
 import operator
-from evaluate import Evaluate
 from collections import deque
 from math import log
-
-# Algorithm
-ID3 = 1
-C4_5 = 2
-CART = 3
-
-# modify in order to support text attribute
-string2intMap = dict()
-word_cnt = 0
-
-
-def isnumber(value):
-    # return isinstance(value, int) or isinstance(value, float)
-    return value.isnumeric()
-
-
-def getWordLabel(word):
-    if word in string2intMap:
-        return string2intMap[word]
-    else:
-        global word_cnt
-        word_cnt += 1
-        string2intMap[word] = word_cnt
-        return word_cnt
-
-
-def getLabel(word):
-    if isnumber(word):
-        return int(word)
-    else:
-        return getWordLabel(word)
-
-# ----------------------------------
-
-class Row:
-    def __init__(self, my_set, label):
-        self.attr = my_set
-        self.label = label
-        self.predict = None
-
-
-class DataSet:
-    def __init__(self, path, file_type, left, right):
-        self.type = file_type
-        self.rows = []
-        with open(path) as file:
-            for line in file.read().splitlines()[left:right]:
-                line = line.split(',')
-                line = [getLabel(word) for word in line]
-                # line = list(map(int, line))  # Parse to int
-                if file_type == "TestSet":
-                    row = Row(line[:], None)
-                else:
-                    row = Row(line[:-1], line[-1])
-                self.rows.append(row)
-
-    def start_classify(self, tree_root):
-        for row in self.rows:
-            row.predict = classify(row, tree_root)
-
-    def check_accuracy(self):
-        """
-        :return: first the accuracy
-                 second the correct count
-        """
-        cnt = 0
-        for row in self.rows:
-            if row.predict == row.label:
-                cnt += 1
-
-        res = float(cnt) / len(self.rows)
-        return res, cnt
-
-    def print_out_result(self):
-        for row in self.rows:
-            print(row.predict)
+from myglobal import *
+from evaluate import *
 
 
 def get_separate_value(rows, col):
@@ -97,27 +22,6 @@ def get_separate_value(rows, col):
     for i in range(len(result_list) - 1):
         separate_list.append((result_list[i] + result_list[i + 1]) / 2)
     return separate_list
-
-
-def get_category_index(separate_value, value):
-    """
-    find out which range index the value lay within the separate_value list
-
-    :param separate_value:
-    :param value: target value
-    :return: the index
-    """
-    SUBSET_NUM = len(separate_value) + 1
-    category_index = -1
-    for i in range(SUBSET_NUM - 1):
-        if value < separate_value[i]:
-            category_index = i
-            break
-
-    if category_index == -1:
-        category_index = SUBSET_NUM - 1
-
-    return category_index
 
 
 def divide_set(rows, col, separate_value):
@@ -295,23 +199,6 @@ def build_tree(rows, scoref=get_entropy, type=ID3):
     return node
 
 
-def classify(row, tree_root):
-    """
-    classify the given row by the given decision tree
-
-    :param row: Row object
-    :param tree_root: the decision tree root node
-    :return: which class it should be
-    """
-    my_row = row.attr
-    node = tree_root
-    while node.label is None:
-        category_index = get_category_index(node.separate_value, my_row[node.col])
-        node = node.child[category_index]
-
-    return node.label
-
-
 def calculate_tree_error_rate(tree_root, beta, data_set):
     """
     calculate the error rate of decision tree
@@ -352,8 +239,8 @@ def calculate_leaf_node_count(tree_root):
 
 if __name__ == "__main__":
     print('readfile start')
-    train_set = DataSet("../数据集/二元分类（30162：15060）：成年人收入/train.csv", "TrainSet", 1, 25000)
-    test_set = DataSet("../数据集/二元分类（30162：15060）：成年人收入/train.csv", "TrainSet", 25000, 30163)
+    train_set = DataSet("./train.csv", "TrainSet", 1, 1000)
+    test_set = DataSet("./train.csv", "TrainSet", 30000, 30163)
     my_rows = train_set.rows
     print('readfile finish')
 
