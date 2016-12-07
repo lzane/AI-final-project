@@ -48,6 +48,7 @@ def write_result_to_file(evaluate, test_set):
     with open('./results/' + 'trees-' + str(tree_num) + '_ratio-' + str(tree_subset_data_ratio) + '_f1-' + str(
             round(evaluate.F1, 3)) + '.txt', 'w+') as f:
         f.write("##########################" + '\n')
+        f.write("trainset ratio: " + str(train_set_ratio) + '\n')
         f.write("accuracy: " + str(evaluate.accuracy) + '\n')
         f.write("precision: " + str(evaluate.precision) + '\n')
         f.write("recall: " + str(evaluate.recall) + '\n')
@@ -80,7 +81,7 @@ def unit(trains_set_data, verify_set_data, test_set_data):
     # print('my_type: ' + str(my_type) + ' train_set_ratio: ' + str(train_set_ratio)
     #       + ' tree_subset_data_ratio: ' + str(tree_subset_data_ratio) + ' tree_num: ' + str(tree_num))
     evaluate = Evaluate(verify_set)
-    evaluate.print()
+    evaluate.calculte()
 
     if evaluate.F1 > bestF1:
         bestF1 = evaluate.F1
@@ -92,31 +93,54 @@ def unit(trains_set_data, verify_set_data, test_set_data):
 
 
 if __name__ == "__main__":
-    trains_set_data, verify_set_data = import_data_set('./train.csv')
-    test_set_data = import_test_set('./test.csv')
+    mode = 0
 
-    while train_set_ratio > 0.7:
-        train_set_ratio -= 0.05
-        # init
-        tree_subset_data_ratio = 0
-        tree_num = 0
-        while tree_num <= 2000:
-            tree_num += 500
-            while tree_subset_data_ratio < 0.4:
-                tree_subset_data_ratio += 0.05
-                print('my_type: ' + str(my_type) + ' train_set_ratio: ' + str(train_set_ratio)
-                      + ' tree_subset_data_ratio: ' + str(tree_subset_data_ratio) + ' tree_num: ' + str(tree_num))
-                process_list = []
-                for i in range(1, 8):
-                    t = multiprocessing.Process(target=unit, args=(trains_set_data, verify_set_data, test_set_data))
-                    process_list.append(t)
+    if mode == 0:
+        # particular generate
+        train_set_ratio = 0.9
+        tree_subset_data_ratio = 0.15
+        best_model_threshold = 0.7
+        tree_num = 1000
+        trains_set_data, verify_set_data = import_data_set('./train.csv')
+        test_set_data = import_test_set('./test.csv')
+        
+        print('my_type: ' + str(my_type) + ' train_set_ratio: ' + str(train_set_ratio)
+              + ' tree_subset_data_ratio: ' + str(tree_subset_data_ratio) + ' tree_num: ' + str(tree_num))
+        process_list = []
+        for i in range(1, 8):
+            # t = multiprocessing.Process(target=unit, args=(trains_set_data, verify_set_data, test_set_data))
+            t = multiprocessing.Process()
+            process_list.append(t)
 
-                for process in process_list:
-                    process.start()
+        for process in process_list:
+            process.start()
 
-                for process in process_list:
-                    process.join()
+        for process in process_list:
+            process.join()
 
-                print('finish one unit')
+    else:
+        # multiprocess random generate
+        while train_set_ratio > 0.7:
+            train_set_ratio -= 0.05
+            trains_set_data, verify_set_data = import_data_set('./train.csv')
+            test_set_data = import_test_set('./test.csv')
+            # init
+            tree_num = 50
+            while tree_num <= 2000:
+                tree_subset_data_ratio = 0
+                while tree_subset_data_ratio <= 0.4:
+                    tree_subset_data_ratio += 0.05
+                    print('my_type: ' + str(my_type) + ' train_set_ratio: ' + str(train_set_ratio)
+                          + ' tree_subset_data_ratio: ' + str(tree_subset_data_ratio) + ' tree_num: ' + str(tree_num))
+                    process_list = []
+                    for i in range(1, 8):
+                        # t = multiprocessing.Process(target=unit, args=(trains_set_data, verify_set_data, test_set_data))
+                        t = multiprocessing.Process()
+                        process_list.append(t)
 
-    print('BestF1 is ' + str(bestF1))
+                    for process in process_list:
+                        process.start()
+
+                    for process in process_list:
+                        process.join()
+                tree_num += 500
