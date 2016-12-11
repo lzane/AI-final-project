@@ -56,10 +56,20 @@ class DataSet:
 
         # random delete some attribute
         if file_type == "TrainSet":
-            temp_remove_index1 = random.randint(0, len(lines[0].split(',')) - 4)
-            temp_remove_index2 = random.randint(0, len(lines[0].split(',')) - 5)
-            self.remove_index.append(temp_remove_index1)
-            self.remove_index.append(temp_remove_index2)
+            # remove_cnt = random.randint(2, 3)
+            remove_cnt = 2
+            remove_up = 4
+            for i in range(remove_cnt):
+                temp_remove_index = random.randint(0, len(lines[0].split(',')) - remove_up)
+                remove_up += 1
+                self.remove_index.append(temp_remove_index)
+
+                # temp_remove_index1 = random.randint(0, len(lines[0].split(',')) - 4)
+                # temp_remove_index2 = random.randint(0, len(lines[0].split(',')) - 5)
+                # temp_remove_index3 = random.randint(0, len(lines[0].split(',')) - 6)
+                # self.remove_index.append(temp_remove_index1)
+                # self.remove_index.append(temp_remove_index2)
+                # self.remove_index.append(temp_remove_index3)
 
         for line in lines:
             line = line.split(',')

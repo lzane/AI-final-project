@@ -64,32 +64,34 @@ def write_result_to_file(evaluate, test_set):
     f.close()
 
 
-def unit(trains_set_data, verify_set_data, test_set_data):
+def unit(test_set_data_inner):
     global bestF1
+    trains_set_data_inner, verify_set_data_inner = import_data_set('./train.csv')
     # build some trees using different date
     # print("Build forest start")
     forest = RandomForest()
-    forest.generate_trees(trains_set_data, tree_num, tree_subset_data_ratio)
+    forest.generate_trees(trains_set_data_inner, tree_num, tree_subset_data_ratio)
     # print("Build forest finish")
 
     # classify using these trees & majority voting to get results
     # print("classify start")
-    verify_set = DataSet(verify_set_data, 'VerifySet')
+    verify_set = DataSet(verify_set_data_inner, 'VerifySet')
     verify_set.start_classify(forest.trees, forest.trees_dataset)
     # print("classify finish")
 
     # print('my_type: ' + str(my_type) + ' train_set_ratio: ' + str(train_set_ratio)
     #       + ' tree_subset_data_ratio: ' + str(tree_subset_data_ratio) + ' tree_num: ' + str(tree_num))
-    evaluate = Evaluate(verify_set)
-    evaluate.calculte()
+    evaluate_inner = Evaluate(verify_set)
+    evaluate_inner.calculte()
+    print(evaluate_inner.F1)
 
-    if evaluate.F1 > bestF1:
-        bestF1 = evaluate.F1
+    if evaluate_inner.F1 > bestF1:
+        bestF1 = evaluate_inner.F1
 
-    if evaluate.F1 > best_model_threshold:
-        test_set = DataSet(test_set_data, 'TestSet')
-        test_set.start_classify(forest.trees, forest.trees_dataset)
-        write_result_to_file(evaluate, test_set)
+    if evaluate_inner.F1 > best_model_threshold:
+        test_set_inner = DataSet(test_set_data_inner, 'TestSet')
+        test_set_inner.start_classify(forest.trees, forest.trees_dataset)
+        write_result_to_file(evaluate_inner, test_set_inner)
 
 
 if __name__ == "__main__":
@@ -100,16 +102,15 @@ if __name__ == "__main__":
         train_set_ratio = 0.9
         tree_subset_data_ratio = 0.15
         best_model_threshold = 0.7
-        tree_num = 1000
-        trains_set_data, verify_set_data = import_data_set('./train.csv')
+        tree_num = 100
+
         test_set_data = import_test_set('./test.csv')
-        
         print('my_type: ' + str(my_type) + ' train_set_ratio: ' + str(train_set_ratio)
               + ' tree_subset_data_ratio: ' + str(tree_subset_data_ratio) + ' tree_num: ' + str(tree_num))
         process_list = []
         for i in range(1, 8):
-            # t = multiprocessing.Process(target=unit, args=(trains_set_data, verify_set_data, test_set_data))
-            t = multiprocessing.Process()
+            t = multiprocessing.Process(target=unit, args=(test_set_data,))
+            # t = multiprocessing.Process()
             process_list.append(t)
 
         for process in process_list:
@@ -122,20 +123,19 @@ if __name__ == "__main__":
         # multiprocess random generate
         while train_set_ratio > 0.7:
             train_set_ratio -= 0.05
-            trains_set_data, verify_set_data = import_data_set('./train.csv')
             test_set_data = import_test_set('./test.csv')
             # init
-            tree_num = 50
-            while tree_num <= 2000:
-                tree_subset_data_ratio = 0
-                while tree_subset_data_ratio <= 0.4:
+            tree_num = 1500
+            while tree_num <= 3000:
+                tree_subset_data_ratio = 0.05
+                while tree_subset_data_ratio <= 0.1:
                     tree_subset_data_ratio += 0.05
                     print('my_type: ' + str(my_type) + ' train_set_ratio: ' + str(train_set_ratio)
                           + ' tree_subset_data_ratio: ' + str(tree_subset_data_ratio) + ' tree_num: ' + str(tree_num))
                     process_list = []
-                    for i in range(1, 8):
-                        # t = multiprocessing.Process(target=unit, args=(trains_set_data, verify_set_data, test_set_data))
-                        t = multiprocessing.Process()
+                    for i in range(0, 8):
+                        t = multiprocessing.Process(target=unit, args=test_set_data)
+                        # t = multiprocessing.Process()
                         process_list.append(t)
 
                     for process in process_list:
