@@ -1,6 +1,8 @@
 import math
 import multiprocessing
 import random
+from autocorrect import spell
+from copy import deepcopy
 
 # parameters
 train_set_ratio = 0.95
@@ -11,19 +13,41 @@ cnt_emotion_map = dict()
 stop_words_list = list()
 
 
-def import_data_set(path):
-    with open(path) as file:
-        lines = file.read().splitlines()
-        train_set_data_raw = random.sample(lines, round(len(lines) * train_set_ratio))
-        for line in train_set_data_raw:
-            lines.remove(line)
-        return train_set_data_raw, lines
-
-
-def import_test_data(path):
+def import_data(path):
     with open(path, 'rt', encoding='utf-8') as file:
         lines = file.read().splitlines()
         return lines
+
+def data_preprocessing(lines):
+    texts = list()
+    for line in lines:
+        temp = Text()
+        line = line.split(',')
+        temp.emotions.append(get_emotion_num(line[0]))
+        line = line[1]
+        line = line.split()
+
+        for word in line:
+            corrected_word = spell(word)  # correct words
+            # corrected_word = word
+            if corrected_word in stop_words_list:  # remove stop words
+                continue
+            temp.ori_words.append(corrected_word)
+            if corrected_word in temp.words:
+                temp.words[corrected_word] += 1
+            else:
+                temp.words[corrected_word] = 1
+
+        texts.append(temp)
+    return texts
+
+
+def random_generate_data(texts):
+    new_texts = deepcopy(texts)
+    train_set_texts_list = random.sample(new_texts, round(len(new_texts) * train_set_ratio))
+    for text in train_set_texts_list:
+        new_texts.remove(text)
+    return train_set_texts_list, new_texts
 
 
 def get_emotion_num(emotion):
@@ -59,26 +83,11 @@ class TextSet:
         self.emotion_text_cnt = list()  # texts count of emotions
         self.word_set = set()
 
-    def read_data(self, data):
-        lines = data
-        for line in lines:
-            temp = Text()
-            line = line.split(',')
-            temp.emotions.append(get_emotion_num(line[0]))
-            line = line[1]
-            line = line.split()
-
-            for word in line:
-                if word in stop_words_list:  # remove stop words
-                    continue
-                temp.ori_words.append(word)
+    def read_data(self, texts):
+        for text in texts:
+            for word in text.words:
                 self.word_set.add(word)
-                if word in temp.words:
-                    temp.words[word] += 1
-                else:
-                    temp.words[word] = 1
-            self.texts.append(temp)
-
+            self.texts.append(text)
         self.lineCnt = len(self.texts)
 
     def calculate_words_and_emotions(self):
@@ -121,11 +130,6 @@ class Classification:
 
                 # res = res * (word_appear_cnt + 1) / \
                 #       (self.train.total_words[e] + self.train.no_repetitive_words[e])
-
-                # print("wordset")
-                # print(len(self.train.wordset))
-                # print("no_repetitive")
-                # print(self.train.no_repetitive_words[e])
 
             res *= (self.train.emotion_text_cnt[e] / self.train.lineCnt)
             emotion_list[e] = res
@@ -172,33 +176,36 @@ def write_result_to_file(test_set):
 
 
 def get_final_result():
-    # Classify:
-    train_set_data, verify_set_data = import_data_set('train.txt')
+    raw_data = import_data('train.txt')
+    preprocessed_data = data_preprocessing(raw_data)
+
     trainSet = TextSet('TrainSet')
-    trainSet.read_data(train_set_data)
+    trainSet.read_data(preprocessed_data)
     trainSet.calculate_words_and_emotions()
-    # verifySet = TextSet('VerifySet')
-    # verifySet.read_data(verify_set_data)
     testSet = TextSet('TestSet')
-    test_set_data = import_test_data('test.txt')
-    testSet.read_data(test_set_data)
+    test_set_data = import_data('test.txt')
+    preprocessed_test_set_data = data_preprocessing(test_set_data)
+    testSet.read_data(preprocessed_test_set_data)
 
     classify = Classification(trainSet, testSet)
     classify.classify()
-    # print(get_emotion_label(text.predicts[0]))
-    # classify.check_accuracy()
-    # return verifySet
     write_result_to_file(testSet)
 
 
 def test():
+    print('------start testing model--------')
+    raw_data = import_data('train.txt')
+    print('Start pre-processing!')
+    preprocessed_data = data_preprocessing(raw_data)
+    print('---Finish Read data and pre-processing!---')
     for i in range(8):
-        test_unit()
+        test_unit(preprocessed_data)
 
 
-def test_unit():
+def test_unit(preprocessed_data):
     # Classify:
-    train_set_data, verify_set_data = import_data_set('train.txt')
+    train_set_data, verify_set_data = random_generate_data(preprocessed_data)
+
     trainSet = TextSet('TrainSet')
     trainSet.read_data(train_set_data)
     trainSet.calculate_words_and_emotions()
@@ -212,13 +219,13 @@ def test_unit():
 
 def init():
     # mystoplist.txt
-    stop_words_data = import_test_data('mystoplist.txt')
+    stop_words_data = import_data('mystoplist.txt')
     for word in stop_words_data:
         stop_words_list.append(word)
 
 
 if __name__ == '__main__':
-    init()
+    # init()
     test()
     # get_final_result()
     print("------finished------")
