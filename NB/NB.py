@@ -8,6 +8,7 @@ train_set_ratio = 0.95
 emotion_cnt = 1
 emotion_map = dict()
 cnt_emotion_map = dict()
+stop_words_list = list()
 
 
 def import_data_set(path):
@@ -20,7 +21,7 @@ def import_data_set(path):
 
 
 def import_test_data(path):
-    with open(path) as file:
+    with open(path, 'rt', encoding='utf-8') as file:
         lines = file.read().splitlines()
         return lines
 
@@ -68,8 +69,8 @@ class TextSet:
             line = line.split()
 
             for word in line:
-                # if len(word) < 4:
-                # continue
+                if word in stop_words_list:  # remove stop words
+                    continue
                 temp.ori_words.append(word)
                 self.word_set.add(word)
                 if word in temp.words:
@@ -209,7 +210,15 @@ def test_unit():
     classify.check_accuracy()
 
 
+def init():
+    # mystoplist.txt
+    stop_words_data = import_test_data('mystoplist.txt')
+    for word in stop_words_data:
+        stop_words_list.append(word)
+
+
 if __name__ == '__main__':
+    init()
     test()
     # get_final_result()
     print("------finished------")
